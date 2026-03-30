@@ -1,8 +1,8 @@
 import requests
 import argparse
 from rag import RAGCatalog
+from book_fetcher import Book
 import time
-from dataclasses import dataclass
 
 OPENLIBRARY_SUBJECTS_URL = "https://openlibrary.org/subjects/{subject}.json"
 
@@ -23,15 +23,6 @@ SUBJECTS = [
 DEFAULT_LIMIT = 500
 
 
-@dataclass
-class Book:
-    title: str
-    authors: list[str]
-    categories: list[str]
-    description: str
-    isbn: str
-
-
 def search_books_per_subject(subject: str, limit: int = DEFAULT_LIMIT) -> list[Book]:
     url = OPENLIBRARY_SUBJECTS_URL.format(subject=subject)
     response = requests.get(url, params={"limit": limit}, timeout=15)
@@ -44,12 +35,15 @@ def search_books_per_subject(subject: str, limit: int = DEFAULT_LIMIT) -> list[B
         if not title:
             continue
 
+        work_key = work.get("key").split("/")[2]
+
         book = Book(
             title=title,
             authors=[a["name"] for a in work.get("authors", [])],
             categories=[subject.replace("_", " ")],
             description="",
             isbn="",
+            work_key=work_key
         )
 
         books.append(book)

@@ -25,7 +25,8 @@ class RAGCatalog:
             metadatas=[{
                 "title": book.title,
                 "authors": ", ".join(book.authors),
-                "categories": ", ".join(book.categories)
+                "categories": ", ".join(book.categories),
+                "work_key": book.work_key
             }],
         )
 
