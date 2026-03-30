@@ -143,7 +143,7 @@ ollama pull llama3
 
 **Passo 4 — Executar o agente**
 ```bash
-python main.py
+python src/main.py
 ```
 
 > **Nota:** O projeto não requer chave de API nem conexão com serviços externos. Tudo roda localmente.
@@ -161,39 +161,7 @@ python main.py
 | Latência | Tempo de resposta excluindo geração do LLM | ≤ 5s | 0,00s (sem LLM) / 17–47s (com LLM) |
 | Cobertura RAG | % de perguntas com ao menos 1 doc relevante recuperado | ≥ 80% | 100% (1/1 pergunta com doc relevante) |
 
-### 5.2 Exemplos de teste
-
-#### Teste 1 — Bolsa Família (aprovado)
-- **Entrada:** renda R$ 800,00 / 5 pessoas / 35 anos / sem deficiência
-- **Saída esperada:** Aprovado para Bolsa Família (renda per capita R$ 160,00 ≤ R$ 218,00)
-- **Saída obtida:** *(a preencher)*
-- **Resultado:** *(Sucesso / Falha)*
-
-#### Teste 2 — BPC Idoso (aprovado)
-- **Entrada:** renda R$ 650,00 / 2 pessoas / 68 anos / sem deficiência
-- **Saída esperada:** Aprovado para BPC Idoso (renda per capita R$ 325,00 ≤ R$ 353,00 e idade ≥ 65)
-- **Saída obtida:** *(a preencher)*
-- **Resultado:** *(Sucesso / Falha)*
-
-#### Teste 3 — Nenhum benefício (negado)
-- **Entrada:** renda R$ 4.000,00 / 2 pessoas / 40 anos / sem deficiência
-- **Saída esperada:** Negado para todos os benefícios com explicação dos motivos e orientação para o CRAS
-- **Saída obtida:** *(a preencher)*
-- **Resultado:** *(Sucesso / Falha)*
-
-#### Teste 4 — BPC Deficiência (aprovado)
-- **Entrada:** renda R$ 500,00 / 2 pessoas / 30 anos / com deficiência
-- **Saída esperada:** Aprovado para BPC Deficiência (renda per capita R$ 250,00 ≤ R$ 353,00)
-- **Saída obtida:** *(a preencher)*
-- **Resultado:** *(Sucesso / Falha)*
-
-#### Teste 5 — Pergunta RAG
-- **Entrada:** "Quais documentos preciso para o BPC?"
-- **Saída esperada:** Lista de documentos com fonte citada (LOAS Art. 20)
-- **Saída obtida:** *(a preencher)*
-- **Resultado:** *(Sucesso / Falha)*
-
-### 5.3 Análise dos resultados
+### 5.2 Análise dos resultados
 
 #### Teste 1 — Bolsa Família (aprovado)
 - **Entrada:** renda R$ 800,00 / 5 pessoas / 35 anos / sem deficiência
