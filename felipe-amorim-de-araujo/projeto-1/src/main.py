@@ -8,3 +8,4 @@ agent = Agent()
 result = agent.recommend(
     ["The Housemaid Freida McFadden"]
 )
+print(result)
