@@ -8,7 +8,9 @@ PALAVRAS_TRIAGEM = [
     "beneficio", "benefício", "direito", "direitos", "renda", "família",
     "cadastro", "bolsa", "bpc", "cras", "auxilio", "auxílio", "programa",
     "vulnerabilidade", "pobreza", "ajuda", "amparo", "elegivel", "elegível",
-    "tarifa", "gas", "gás", "id jovem", "idoso", "deficiencia", "deficiência"
+    "tarifa", "gas", "gás", "id jovem", "idoso", "deficiencia", "deficiência",
+    "quero saber", "posso receber", "tenho direito", "me ajuda", "verificar",
+    "quero verificar", "quero checar", "quero saber se"
 ]
 
 PALAVRAS_ENCERRAMENTO = ["sair", "exit", "tchau", "encerrar", "finalizar", "fim"]
