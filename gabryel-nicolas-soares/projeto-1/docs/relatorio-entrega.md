@@ -163,7 +163,75 @@ python main.py
 
 ### 5.2 Exemplos de teste
 
+#### Teste 1 — Bolsa Família (aprovado)
+- **Entrada:** renda R$ 800,00 / 5 pessoas / 35 anos / sem deficiência
+- **Saída esperada:** Aprovado para Bolsa Família (renda per capita R$ 160,00 ≤ R$ 218,00)
+- **Saída obtida:** *(a preencher)*
+- **Resultado:** *(Sucesso / Falha)*
 
+#### Teste 2 — BPC Idoso (aprovado)
+- **Entrada:** renda R$ 650,00 / 2 pessoas / 68 anos / sem deficiência
+- **Saída esperada:** Aprovado para BPC Idoso (renda per capita R$ 325,00 ≤ R$ 353,00 e idade ≥ 65)
+- **Saída obtida:** *(a preencher)*
+- **Resultado:** *(Sucesso / Falha)*
+
+#### Teste 3 — Nenhum benefício (negado)
+- **Entrada:** renda R$ 4.000,00 / 2 pessoas / 40 anos / sem deficiência
+- **Saída esperada:** Negado para todos os benefícios com explicação dos motivos e orientação para o CRAS
+- **Saída obtida:** *(a preencher)*
+- **Resultado:** *(Sucesso / Falha)*
+
+#### Teste 4 — BPC Deficiência (aprovado)
+- **Entrada:** renda R$ 500,00 / 2 pessoas / 30 anos / com deficiência
+- **Saída esperada:** Aprovado para BPC Deficiência (renda per capita R$ 250,00 ≤ R$ 353,00)
+- **Saída obtida:** *(a preencher)*
+- **Resultado:** *(Sucesso / Falha)*
+
+#### Teste 5 — Pergunta RAG
+- **Entrada:** "Quais documentos preciso para o BPC?"
+- **Saída esperada:** Lista de documentos com fonte citada (LOAS Art. 20)
+- **Saída obtida:** *(a preencher)*
+- **Resultado:** *(Sucesso / Falha)*
+
+### 5.3 Análise dos resultados
+
+#### Teste 1 — Bolsa Família (aprovado)
+- **Entrada:** renda R$ 800,00 / 5 pessoas / 35 anos / sem deficiência
+- **Saída esperada:** Aprovado para Bolsa Família (renda per capita R$ 160,00 ≤ R$ 218,00)
+- **Saída obtida:** Aprovado para Bolsa Família, Auxílio Gás e Tarifa Social de Energia com explicação dos motivos e documentos necessários. Tempo: 32,56s
+- **Resultado:** Sucesso
+ 
+#### Teste 2 — BPC Idoso (aprovado)
+- **Entrada:** renda R$ 650,00 / 2 pessoas / 68 anos / sem deficiência
+- **Saída esperada:** Aprovado para BPC Idoso (renda per capita R$ 325,00 ≤ R$ 353,00 e idade ≥ 65)
+- **Saída obtida:** Aprovado para BPC (Idoso), Auxílio Gás e Tarifa Social de Energia com orientação de documentos e onde requerê-los. Tempo: 47,30s
+- **Resultado:** Sucesso
+ 
+#### Teste 3 — Nenhum benefício (negado)
+- **Entrada:** renda R$ 4.000,00 / 2 pessoas / 40 anos / sem deficiência
+- **Saída esperada:** Negado para todos os benefícios com explicação dos motivos e orientação para o CRAS
+- **Saída obtida:** Negado para todos os benefícios com motivos detalhados (renda per capita R$ 2.000,00 acima dos limites) e orientação para o CRAS. Tempo: 0,00s
+- **Resultado:** Sucesso
+ 
+#### Teste 4 — BPC Deficiência (aprovado)
+- **Entrada:** renda R$ 500,00 / 2 pessoas / 30 anos / com deficiência
+- **Saída esperada:** Aprovado para BPC Deficiência (renda per capita R$ 250,00 ≤ R$ 353,00)
+- **Saída obtida:** Aprovado para BPC (Deficiência), Auxílio Gás e Tarifa Social de Energia com documentos e locais de requerimento. Tempo: 44,71s
+- **Resultado:** Sucesso
+ 
+#### Teste 5 — Pergunta RAG
+- **Entrada:** "Quais documentos preciso para o BPC?"
+- **Saída esperada:** Lista de documentos com fonte citada (LOAS Art. 20)
+- **Saída obtida:** Resposta com orientação sobre documentos e elegibilidade citando fontes (LOAS Lei nº 8.742/1993, Art. 20). Agente classificou corretamente como pergunta sem solicitar dados. Tempo: 17,43s
+- **Resultado:** Sucesso
+ 
+### 5.3 Análise dos resultados
+ 
+Os 5 testes executados obtiveram resultado de sucesso, demonstrando que o motor de elegibilidade funciona corretamente. O agente identificou com precisão os benefícios aprovados e negados com base nas regras legais, sempre apresentando os motivos correspondentes.
+ 
+O tempo de resposta variou entre 0,00s (casos negados, sem chamada ao LLM) e 47,30s (casos aprovados com geração de texto pelo Llama 3). A latência elevada nos casos aprovados é decorrente do modelo rodando localmente. A métrica de ≤ 5s foi atingida apenas nos casos negados, onde o LLM não é acionado.
+ 
+O módulo RAG funcionou corretamente no Teste 5, classificando a pergunta como "pergunta" e recuperando documentos relevantes da base de conhecimento com citação das fontes legais.
 
 ## 6. Diferenciais implementados
 
@@ -209,5 +277,5 @@ python main.py
 
 - [x] Documento de engenharia preenchido
 - [x] Código funcional no repositório
-- [ ] Relatório de entrega preenchido
+- [x] Relatório de entrega preenchido
 - [ ] Pull Request aberto
