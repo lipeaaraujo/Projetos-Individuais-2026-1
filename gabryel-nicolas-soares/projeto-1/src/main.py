@@ -1,10 +1,9 @@
 from typing import Optional
 from rag import buscar_rag
 from elegibilidade import chamar_llm, motor_elegibilidade
-
+import time
 
 # classifica intencao
-
 PALAVRAS_TRIAGEM = [
     "beneficio", "benefício", "direito", "direitos", "renda", "família",
     "cadastro", "bolsa", "bpc", "cras", "auxilio", "auxílio", "programa",
@@ -68,7 +67,6 @@ def coletar_dados() -> Optional[dict]:
         "tem_deficiencia": tem_deficiencia
     }
 
-# modulo de perguntas
 def responder_pergunta(pergunta: str, sessao: dict) -> str:
     docs_relevantes = buscar_rag(pergunta)
     fontes = []
@@ -148,7 +146,8 @@ def agente():
         intencao = classificar_intencao(msg)
 
         if intencao == "encerramento":
-            print("\n🤖 Atendimento encerrado. Até logo! 👋\n")
+            print("\n🤖 Atendimento encerrado. Os dados desta sessão foram descartados.")
+            print("   Para novo atendimento, reinicie o programa. Até logo! 👋\n")
             break
 
         elif intencao == "triagem":
@@ -158,15 +157,21 @@ def agente():
                 continue
             sessao["dados_usuario"] = dados
             print("\n⏳ Analisando elegibilidade...\n")
+            inicio = time.time()
             resposta = motor_elegibilidade(dados, sessao)
+            fim = time.time()
             print("📋 Resultado da análise:\n")
             print(resposta)
+            print(f"\n⏱️ Tempo de resposta: {fim - inicio:.2f}s")
             sessao["historico"].append({"papel": "agente", "mensagem": resposta})
 
         elif intencao == "pergunta":
             print("\n⏳ Buscando informação...\n")
+            inicio = time.time()
             resposta = responder_pergunta(msg, sessao)
+            fim = time.time()
             print("💬", resposta)
+            print(f"\n⏱️ Tempo de resposta: {fim - inicio:.2f}s")
             sessao["historico"].append({"papel": "agente", "mensagem": resposta})
 
         else:
