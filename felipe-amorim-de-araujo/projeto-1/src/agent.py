@@ -3,6 +3,7 @@ import requests
 from catalog_builder import RAGCatalog
 from book_fetcher import search_book_metadata, Book
 from dotenv import load_dotenv
+from price_checker import verify_price
 
 load_dotenv()
 
@@ -37,6 +38,15 @@ class Agent:
         candidates = self._catalog.search_similar(query, k=k * 3, titles_to_remove=read_books)
 
         print(candidates)
+        candidates_with_price = []
+        for book in candidates:
+            offers = verify_price(book["title"])
+            minimum_price = min((o.price for o in offers), default=None)
+            candidates_with_price.append({
+                **book,
+                "offers": offers,
+                "minimum_price": minimum_price
+            })
 
 
 def _build_rag_query(read_context: list[Book]) -> str:
