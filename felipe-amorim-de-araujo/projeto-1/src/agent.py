@@ -1,5 +1,6 @@
 import os
-import ollama
+import unicodedata
+from google import genai
 import requests
 from catalog_builder import RAGCatalog
 from book_fetcher import search_book_metadata, Book
@@ -8,7 +9,7 @@ from price_checker import verify_price
 
 load_dotenv()
 
-MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:7b")
+MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
 DB_PATH = "data/chroma_db"
 WORKS_URL = "https://openlibrary.org{work_key}.json"
 
@@ -36,7 +37,9 @@ class Agent:
 
         query = _build_rag_query(read_context)
 
+        normalized_read = [_normalize_title(t) for t in read_books]
         candidates = self._catalog.search_similar(query, k=k * 3, titles_to_remove=read_books)
+        candidates = [c for c in candidates if _normalize_title(c["title"]) not in normalized_read]
         # candidates = _enrich_candidates(candidates)
 
         candidates_with_price = []
@@ -62,34 +65,51 @@ class Agent:
             for m in read_context
         )
 
+        diverse = []
+        seen_authors = set()
+        for c in candidates:
+            author_key = c["authors"][0].lower() if c.get("authors") else ""
+            if author_key not in seen_authors:
+                seen_authors.add(author_key)
+                diverse.append(c)
+            if len(diverse) == k:
+                break
+
         result = []
-        for candidate in candidates[:k]:
+        for candidate in diverse:
             justification = self._justify(candidate, read_books_text)
             print(justification)
             result.append({
                 "title": candidate["title"],
                 "justification": justification,
                 "minimum_price": candidate.get("minimum_price"),
-                "cheapest_store": candidate["offers"][0].store if candidate.get("offers") else "",
+                "cheapest_store": min(candidate["offers"], key=lambda o: o.price).store if candidate.get("offers") else "",
                 "offers": candidate.get("offers", []),
             })
         return result
 
     def _justify(self, candidate: dict, read_books_text: str) -> str:
-        prompt = f"""You are a literary recommendation agent.
-A user who has read the following books:
+        prompt = f"""Você é um agente de recomendação literária. Responda SOMENTE em português do Brasil (pt-BR). Não use inglês, chinês, nem qualquer outro idioma.
+
+O usuário leu os seguintes livros:
 {read_books_text}
 
-...is being recommended: "{candidate['title']}" by {candidate['authors']} (genres: {candidate['categories']}).
+O livro recomendado é: "{candidate['title']}" de {candidate['authors']} (gêneros: {candidate['categories']}).
 
-Write 1-2 sentences in Brazilian Portuguese explaining why this book is a good recommendation for this user.
-Reply with only the justification text, nothing else."""
+Escreva 1 a 2 frases em português do Brasil explicando por que este livro é uma boa recomendação para este usuário.
+Responda apenas com o texto da justificativa, sem mais nada."""
 
-        response = ollama.chat(
+        client = genai.Client()
+        response = client.models.generate_content(
             model=MODEL,
-            messages=[{"role": "user", "content": prompt}],
+            contents=prompt
         )
-        return response.message.content.strip()
+        return response.text
+
+
+def _normalize_title(title: str) -> str:
+    normalized = unicodedata.normalize("NFD", title.lower())
+    return "".join(c for c in normalized if unicodedata.category(c) != "Mn")
 
 
 def _build_rag_query(read_context: list[Book]) -> str:
