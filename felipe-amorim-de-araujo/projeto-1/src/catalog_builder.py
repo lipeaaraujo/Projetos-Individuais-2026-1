@@ -34,13 +34,19 @@ def search_books_per_subject(subject: str, limit: int = DEFAULT_LIMIT) -> list[B
         title = work.get("title", "").strip()
         if not title:
             continue
+        if _is_low_quality_title(title):
+            continue
+
+        subjects = [s for s in work.get("subject", []) if isinstance(s, str)]
+        if len(subjects) < 2:
+            continue
 
         work_key = work.get("key").split("/")[2]
 
         book = Book(
             title=title,
             authors=[a["name"] for a in work.get("authors", [])],
-            categories=[subject.replace("_", " ")],
+            categories=[subject.replace("_", " ")] + subjects[:4],
             description="",
             isbn="",
             work_key=work_key
@@ -49,6 +55,20 @@ def search_books_per_subject(subject: str, limit: int = DEFAULT_LIMIT) -> list[B
         books.append(book)
 
     return books
+
+
+def _is_low_quality_title(title: str) -> bool:
+    if len(title) > 90:
+        return True
+    if title.count(":") >= 2:
+        return True
+    lower = title.lower()
+    academic_markers = [
+        "an introduction to", "a history of", "a guide to",
+        "proceedings of", "journal of", "transactions of",
+        "vol.", "volume ", "edition", "handbook of",
+    ]
+    return any(marker in lower for marker in academic_markers)
 
 
 def main():
