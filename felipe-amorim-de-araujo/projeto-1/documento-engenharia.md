@@ -1,7 +1,7 @@
 # Documento de Engenharia — Projeto Individual 1
 
 > **Aluno:** Felipe Amorim de Araujo
-> **Matrícula:**: 221022275
+> **Matrícula:** 221022275
 > **Domínio:** Cultura
 > **Função do agente:** Recomendação
 > **Restrição obrigatória:** Integração com API externa
@@ -36,7 +36,7 @@ O público-alvo são leitores brasileiros que buscam descobrir novos livros e ot
 | RF01 | O agente deve receber uma lista de títulos de livros já lidos pelo usuário | Alta |
 | RF02 | O agente deve buscar metadados dos livros informados via Open Library Search API e Works API | Alta |
 | RF03 | O agente deve recuperar livros candidatos a partir de um catálogo vetorial (RAG) com base nos gêneros e descrições dos livros lidos | Alta |
-| RF04 | O agente deve enriquecer os candidatos com descrições completas via Open Library Works API | Alta |
+| RF04 | O agente deve filtrar candidatos já lidos pelo usuário antes de apresentar as recomendações | Alta |
 | RF05 | O agente deve verificar preços dos candidatos nas livrarias Mercado Livre, Amazon BR e Estante Virtual | Alta |
 | RF06 | O agente deve gerar uma justificativa em português para cada recomendação, explicando a relação com o histórico de leitura do usuário | Alta |
 | RF07 | O usuário deve poder adicionar livros recomendados a uma lista de desejos persistente | Média |
@@ -52,9 +52,9 @@ O público-alvo são leitores brasileiros que buscam descobrir novos livros e ot
 |----|-----------|-----------|
 | RNF01 | A interface deve ser apresentada inteiramente em português (pt-BR) | Usabilidade |
 | RNF02 | O agente deve processar uma requisição de recomendação em menos de 60 segundos | Desempenho |
-| RNF03 | Dados do usuário não devem ser transmitidos a serviços externos (histórico de leitura e lista de desejos armazenados localmente) | Privacidade |
+| RNF03 | O histórico de leitura e a lista de desejos do usuário devem ser armazenados exclusivamente em disco local, sem persistência remota | Privacidade |
 | RNF04 | Falhas em fontes de preço individuais não devem interromper o fluxo; o agente deve retornar resultados parciais | Resiliência |
-| RNF05 | O LLM utilizado deve rodar localmente via Ollama, sem dependência de APIs pagas para a geração de texto | Custo |
+| RNF05 | As justificativas devem ser geradas em português (pt-BR) sem alternar para outros idiomas | Qualidade |
 | RNF06 | O catálogo vetorial deve ser persistido em disco e reutilizado entre sessões | Desempenho |
 
 ---
@@ -64,15 +64,14 @@ O público-alvo são leitores brasileiros que buscam descobrir novos livros e ot
 ### Caso de uso 1: Obter recomendações personalizadas
 
 - **Ator:** Leitor
-- **Pré-condição:** O catálogo RAG foi construído (`catalog_builder.py` executado ao menos uma vez)
+- **Pré-condição:** O catálogo RAG foi construído (`catalog_builder.py` executado ao menos uma vez) e a variável `GEMINI_API_KEY` está configurada no `.env`
 - **Fluxo principal:**
   1. O usuário informa uma lista de livros já lidos no formulário
   2. O agente busca metadados de cada livro via Open Library (Search + Works API)
   3. O agente constrói uma query de similaridade e recupera candidatos do ChromaDB
-  4. Os candidatos são enriquecidos com descrições via Works API
-  5. Os preços são verificados nas livrarias para cada candidato
-  6. O LLM (Ollama / qwen2.5:7b) gera uma justificativa individual para cada recomendação
-  7. O usuário visualiza as recomendações com justificativas e preços
+  4. Os preços são verificados nas livrarias para cada candidato
+  5. O LLM (Gemini API) gera justificativas para todas as recomendações em uma única chamada
+  6. O usuário visualiza as recomendações com justificativas e preços
 - **Pós-condição:** Lista de recomendações exibida com justificativas e preços por loja
 
 ### Caso de uso 2: Gerenciar lista de desejos
@@ -90,7 +89,7 @@ O público-alvo são leitores brasileiros que buscam descobrir novos livros e ot
 ### Caso de uso 3: Construir o catálogo de livros
 
 - **Ator:** Mantenedor
-- **Pré-condição:** Dependências instaladas, Ollama em execução
+- **Pré-condição:** Dependências instaladas
 - **Fluxo principal:**
   1. O mantenedor executa `python src/catalog_builder.py --limit N`
   2. O script consulta a Open Library Subjects API para 40 assuntos pré-definidos
@@ -115,13 +114,10 @@ book_fetcher: Open Library Works API → enriquece com descrição e subjects
 rag: ChromaDB → busca livros similares por embedding (exclui lidos)
     │
     ▼
-_enrich_candidates: Works API → enriquece candidatos com descrição completa
-    │
-    ▼
 price_checker: Mercado Livre API + Amazon BR + Estante Virtual → preços por loja
     │
     ▼
-agent._justify: Ollama (qwen2.5:7b) → justificativa em pt-BR por livro
+agent._justify_all: Gemini API (gemini-3.1-flash-lite-preview) → justificativas em pt-BR em chamada única
     │
     ▼
 Saída: recomendações ranqueadas com justificativa + preços + ofertas
@@ -133,11 +129,11 @@ Saída: recomendações ranqueadas com justificativa + preços + ofertas
 
 - **Tipo de agente:** RAG + tool-using pipeline sequencial
 
-- **LLM utilizado:** Ollama / qwen2.5:7b (local, sem custo de inferência)
+- **LLM utilizado:** Gemini API — `gemini-3.1-flash-lite-preview` (configurável via `GEMINI_MODEL` no `.env`)
 
 - **Componentes principais:**
   - [x] **Módulo de entrada:** Formulário Streamlit com lista de livros lidos e quantidade de recomendações desejadas
-  - [x] **Processamento / LLM:** `agent.py` orquestra o pipeline; `_justify()` chama o Ollama para geração de justificativas individuais
+  - [x] **Processamento / LLM:** `agent.py` orquestra o pipeline; `_justify_all()` chama a Gemini API para geração de justificativas em chamada única
   - [x] **Ferramentas externas (tools):**
     - `book_fetcher.py`: Open Library Search API e Works API
     - `catalog_builder.py`: Open Library Subjects API (build do catálogo)
@@ -157,7 +153,7 @@ flowchart TD
 
     subgraph AGENT["agent.py (Orquestrador)"]
         ORCH["Agent.recommend()"]
-        JUSTIFY["Agent._justify()"]
+        JUSTIFY["Agent._justify_all()"]
     end
 
     subgraph MODULES["Módulos"]
@@ -167,8 +163,8 @@ flowchart TD
         WL["wishlist.py\nJSON local"]
     end
 
-    subgraph LLM["LLM Local"]
-        OLLAMA["Ollama\nqwen2.5:7b"]
+    subgraph LLM["LLM (API)"]
+        GEMINI["Gemini API\ngemini-3.1-flash-lite-preview"]
     end
 
     subgraph EXTERNAL["APIs Externas"]
@@ -196,7 +192,7 @@ flowchart TD
     ORCH --> RAG
     ORCH --> PC
     ORCH --> JUSTIFY
-    JUSTIFY --> OLLAMA
+    JUSTIFY --> GEMINI
 
     BF --> OL_SEARCH
     BF --> OL_WORKS
@@ -222,15 +218,15 @@ flowchart TD
 ## 8. Estratégia de Avaliação
 
 - **Métricas definidas:**
-  - *Relevância das recomendações:* avaliação manual de compatibilidade entre o livro recomendado e o histórico de leitura informado (escala 1 a 5)
-  - *Qualidade da justificativa:* avaliação manual de coerência entre a justificativa gerada pelo LLM e o histórico informado (escala 1 a 5)
+  - *Relevância das recomendações:* contagem manual de recomendações compatíveis com o gênero e histórico do perfil (0 = irrelevante, 1 = relevante por livro; resultado final: número de acertos em 5 recomendações)
+  - *Qualidade da justificativa:* avaliação manual de coerência (escala 1 a 5): a justificativa menciona livros lidos, conecta tematicamente ao candidato e está escrita em português sem trocas de idioma
   - *Cobertura de preços:* percentual de recomendações com ao menos um preço encontrado
   - *Latência:* tempo total de resposta do pipeline (medido com `time.time()` no `agent.py`)
 
 - **Conjunto de testes:**
   - 5 perfis de leitura distintos (ficção científica, literatura brasileira, mistério, filosofia, fantasia)
   - Cada perfil com 3–5 livros lidos informados
-  - Total: 25 execuções de avaliação
+  - Total: 5 execuções de avaliação (uma por perfil)
 
 - **Método de avaliação:** Manual para relevância e qualidade. Automático para cobertura de preços e latência.
 
@@ -242,4 +238,4 @@ flowchart TD
 2. Mercado Livre API — Busca de itens: https://developers.mercadolivre.com.br/pt_br/itens-e-buscas
 3. ChromaDB Documentation — https://docs.trychroma.com
 4. Sentence Transformers — `paraphrase-multilingual-MiniLM-L12-v2`: https://www.sbert.net
-5. Ollama — https://ollama.com
+5. Google Gemini API — https://ai.google.dev/gemini-api/docs
