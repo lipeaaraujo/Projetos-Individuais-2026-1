@@ -14,7 +14,7 @@ SUBJECTS = [
     "biography", "autobiography", "history", "philosophy",
     "psychology", "self_help", "science", "essays",
     "brazilian_literature", "latin_american_literature",
-    "spanish_literature", "french_literature", "russian_literature",
+    "spanish_literature", "french_literature",
     "japanese_literature", "american_literature", "british_literature",
     "coming_of_age", "political_fiction", "war_stories",
     "magical_realism", "graphic_novels", "poetry",
@@ -25,7 +25,7 @@ DEFAULT_LIMIT = 500
 
 def search_books_per_subject(subject: str, limit: int = DEFAULT_LIMIT) -> list[Book]:
     url = OPENLIBRARY_SUBJECTS_URL.format(subject=subject)
-    response = requests.get(url, params={"limit": limit}, timeout=15)
+    response = requests.get(url, params={"limit": limit}, timeout=30)
     response.raise_for_status()
     data = response.json()
 
@@ -61,6 +61,9 @@ def _is_low_quality_title(title: str) -> bool:
     if len(title) > 90:
         return True
     if title.count(":") >= 2:
+        return True
+    ascii_ratio = sum(1 for c in title if ord(c) < 128) / max(len(title), 1)
+    if ascii_ratio < 0.8:
         return True
     lower = title.lower()
     academic_markers = [
