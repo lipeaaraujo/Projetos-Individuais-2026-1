@@ -12,9 +12,10 @@ class GuardrailError(ValueError):
 
 MIN_DIM = 100
 MAX_DIM = 4096
-BLANK_THRESHOLD = 5       # mean pixel value below this → blank
+BLANK_THRESHOLD = 2       # mean pixel value below this → blank
 OVEREXPOSED_THRESHOLD = 250  # mean pixel value above this → overexposed
 MAX_DETECTIONS = 150
+MAX_BOX_AREA_RATIO = 0.25  # detections covering >25% of the image are artifacts
 
 
 def validate_input(img: Image.Image) -> None:
@@ -41,14 +42,31 @@ def validate_input(img: Image.Image) -> None:
 def validate_output(
     detections: list[dict],
     confidence_threshold: float = 0.4,
+    img_size: tuple[int, int] | None = None,  # (width, height)
+    max_box_area_ratio: float = MAX_BOX_AREA_RATIO,
 ) -> dict:
     """
-    Filter detections by confidence and attach warnings for anomalous outputs.
+    Filter detections by confidence and box size, and attach warnings for anomalous outputs.
     Returns dict with 'detections' (filtered) and 'warnings' (list of strings).
-    """
-    filtered = [d for d in detections if d["score"] >= confidence_threshold]
-    warnings = []
 
+    Boxes covering more than max_box_area_ratio of the image are dropped — these are
+    typically satellite trails, diffraction spikes, or other imaging artifacts that
+    YOLOS mistakes for objects.
+    """
+    img_area = (img_size[0] * img_size[1]) if img_size else None
+
+    filtered = []
+    for d in detections:
+        if d["score"] < confidence_threshold:
+            continue
+        if img_area:
+            x1, y1, x2, y2 = d["box"]
+            box_area = max(0.0, x2 - x1) * max(0.0, y2 - y1)
+            if box_area / img_area > max_box_area_ratio:
+                continue
+        filtered.append(d)
+
+    warnings = []
     if len(filtered) == 0:
         warnings.append("no_detections")
     elif len(filtered) > MAX_DETECTIONS:

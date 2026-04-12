@@ -43,7 +43,7 @@ def test_rejects_too_large():
 
 
 def test_rejects_blank_image():
-    img = make_image(value=0)  # all black
+    img = make_image(value=1)  # below BLANK_THRESHOLD=2
     with pytest.raises(GuardrailError, match="blank") as exc:
         validate_input(img)
     assert exc.value.reason == "blank"
@@ -83,3 +83,20 @@ def test_clean_output_no_warnings():
     detections = [{"box": [10, 10, 50, 50], "score": 0.7}]
     result = validate_output(detections, confidence_threshold=0.4)
     assert result["warnings"] == []
+
+
+def test_filters_oversized_boxes():
+    """Boxes covering >25% of the image should be dropped as artifacts."""
+    # 400x400 box on a 640x640 image = 39% — should be filtered
+    artifact = {"box": [0.0, 0.0, 400.0, 400.0], "score": 0.9}
+    small = {"box": [10.0, 10.0, 50.0, 50.0], "score": 0.9}
+    result = validate_output([artifact, small], confidence_threshold=0.4, img_size=(640, 640))
+    assert len(result["detections"]) == 1
+    assert result["detections"][0] == small
+
+
+def test_oversized_box_filter_skipped_without_img_size():
+    """Without img_size the area filter should not apply."""
+    artifact = {"box": [0.0, 0.0, 400.0, 400.0], "score": 0.9}
+    result = validate_output([artifact], confidence_threshold=0.4, img_size=None)
+    assert len(result["detections"]) == 1

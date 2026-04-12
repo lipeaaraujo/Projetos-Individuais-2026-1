@@ -114,7 +114,11 @@ def run_pipeline(
             per_image_times.append(img_time)
 
             # Output guardrail
-            result = validate_output(raw_detections, confidence_threshold=confidence_threshold)
+            result = validate_output(
+                raw_detections,
+                confidence_threshold=confidence_threshold,
+                img_size=img.size,
+            )
             detections = result["detections"]
 
             if result["warnings"]:
