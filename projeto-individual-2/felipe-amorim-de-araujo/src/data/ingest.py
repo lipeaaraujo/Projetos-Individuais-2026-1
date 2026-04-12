@@ -43,7 +43,7 @@ def query_region(ra: float, dec: float, radius_deg: float = 0.05) -> pd.DataFram
     result = SDSS.query_region(
         coordinates=coord,
         radius=radius_deg * u.deg,
-        photoobj_fields=["objID", "ra", "dec", "type", "petroRad_r", "psfMag_r", "flags"],
+        photoobj_fields=["objID", "ra", "dec", "type", "petroRad_r", "psfMag_r"],
         data_release=17,
     )
     if result is None:
@@ -52,7 +52,6 @@ def query_region(ra: float, dec: float, radius_deg: float = 0.05) -> pd.DataFram
     df = result.to_pandas()
     df = df[df["type"].isin(CLASS_MAP.keys())].copy()
     df = df[df["psfMag_r"] < 22.0]
-    df = df[df["flags"] == 0]
     df["class_name"] = df["type"].map(CLASS_MAP)
     return df.reset_index(drop=True)
 
