@@ -23,32 +23,37 @@ def test_valid_image_passes():
 
 def test_rejects_non_rgb():
     img = Image.new("L", (640, 640))  # grayscale
-    with pytest.raises(GuardrailError, match="RGB"):
+    with pytest.raises(GuardrailError, match="RGB") as exc:
         validate_input(img)
+    assert exc.value.reason == "wrong_mode"
 
 
 def test_rejects_too_small():
     img = make_image(w=50, h=50)
-    with pytest.raises(GuardrailError, match="too small"):
+    with pytest.raises(GuardrailError, match="too small") as exc:
         validate_input(img)
+    assert exc.value.reason == "too_small"
 
 
 def test_rejects_too_large():
     img = make_image(w=5000, h=5000)
-    with pytest.raises(GuardrailError, match="too large"):
+    with pytest.raises(GuardrailError, match="too large") as exc:
         validate_input(img)
+    assert exc.value.reason == "too_large"
 
 
 def test_rejects_blank_image():
     img = make_image(value=0)  # all black
-    with pytest.raises(GuardrailError, match="blank"):
+    with pytest.raises(GuardrailError, match="blank") as exc:
         validate_input(img)
+    assert exc.value.reason == "blank"
 
 
 def test_rejects_overexposed_image():
     img = make_image(value=255)  # all white
-    with pytest.raises(GuardrailError, match="overexposed"):
+    with pytest.raises(GuardrailError, match="overexposed") as exc:
         validate_input(img)
+    assert exc.value.reason == "overexposed"
 
 
 # --- Output guardrails ---
