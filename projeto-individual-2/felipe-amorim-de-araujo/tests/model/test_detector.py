@@ -20,6 +20,7 @@ def mock_detector():
         mock_proc.return_value.post_process_object_detection.return_value = [
             {
                 "scores": torch.tensor([0.85, 0.3]),
+                "labels": torch.tensor([0, 1]),
                 "boxes": torch.tensor([[10., 10., 50., 50.], [60., 60., 80., 80.]]),
             }
         ]
