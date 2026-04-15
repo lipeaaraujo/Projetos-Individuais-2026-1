@@ -187,6 +187,7 @@ uv run python -m src.inference --image data/raw/field_0000.jpg
 
 # 6. Rodar testes
 uv run pytest tests/ -v
+```
 
 ## 11. Referências
 
@@ -194,7 +195,7 @@ uv run pytest tests/ -v
 2. SDSS Collaboration. SDSS Data Release 17. https://www.sdss.org/dr17/  
 3. Hugging Face. hustvl/yolos-small model card. https://huggingface.co/hustvl/yolos-small  
 4. MLflow Documentation. https://mlflow.org/docs/latest/index.html  
-5. Lupton, R. et al. (2004). Preparing Red-Green-Blue Images from CCD Data (arcsinh stretch).  
+5. Lupton, R. et al. (2004). Preparing Red-Green-Blue Images from CCD Data (arcsinh stretch).
 
 ---
 
