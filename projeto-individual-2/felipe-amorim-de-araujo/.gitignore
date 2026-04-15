@@ -208,6 +208,7 @@ cython_debug/
 data/raw/
 data/processed/
 data/*.json
+mlruns/*/models/
 
 # PyPI configuration file
 .pypirc
