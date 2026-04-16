@@ -43,13 +43,14 @@ def query_region(ra: float, dec: float, radius_deg: float = 0.05) -> pd.DataFram
     result = SDSS.query_region(
         coordinates=coord,
         radius=radius_deg * u.deg,
-        photoobj_fields=["objID", "ra", "dec", "type", "petroRad_r", "psfMag_r"],
+        photoobj_fields=["objID", "ra", "dec", "type", "petroRad_r", "psfMag_r", "mode"],
         data_release=17,
     )
     if result is None:
         return pd.DataFrame()
 
     df = result.to_pandas()
+    df = df[df["mode"] == 1].copy()           # primary detections only — drops deblended children
     df = df[df["type"].isin(CLASS_MAP.keys())].copy()
     df = df[df["psfMag_r"] < 22.0]
     df["class_name"] = df["type"].map(CLASS_MAP)
