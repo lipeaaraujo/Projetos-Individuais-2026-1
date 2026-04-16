@@ -45,7 +45,8 @@ def run_pipeline(
     n_regions: int = 20,
     radius_deg: float = 0.05,
     scale: float = 0.2,
-    confidence_threshold: float = 0.4,
+    confidence_threshold: float = 0.6,
+    nms_iou_threshold: float = 0.5,
     model_path: str = "hustvl/yolos-small",
 ):
     mlflow.set_experiment(EXPERIMENT_NAME)
@@ -63,6 +64,7 @@ def run_pipeline(
             "radius_deg": radius_deg,
             "scale": scale,
             "confidence_threshold": confidence_threshold,
+            "nms_iou_threshold": nms_iou_threshold,
             "model_name": model_path,
         })
 
@@ -110,16 +112,11 @@ def run_pipeline(
             # Preprocess + detect
             t_img = time.perf_counter()
             preprocessed = preprocess_image(img)
-            raw_detections = detector.detect(preprocessed)
+            raw_detections = detector.detect(preprocessed, confidence_threshold=confidence_threshold, nms_iou_threshold=nms_iou_threshold)
             img_time = time.perf_counter() - t_img
             per_image_times.append(img_time)
 
-            # Output guardrail
-            result = validate_output(
-                raw_detections,
-                confidence_threshold=confidence_threshold,
-                img_size=img.size,
-            )
+            result = validate_output(raw_detections, img_size=img.size)
             detections = result["detections"]
 
             if result["warnings"]:
@@ -227,7 +224,8 @@ if __name__ == "__main__":
     parser.add_argument("--n-regions", type=int, default=20)
     parser.add_argument("--radius-deg", type=float, default=0.05)
     parser.add_argument("--scale", type=float, default=0.2)
-    parser.add_argument("--confidence-threshold", type=float, default=0.4)
+    parser.add_argument("--confidence-threshold", type=float, default=0.6)
+    parser.add_argument("--nms-iou-threshold", type=float, default=0.5)
     parser.add_argument("--data-dir", type=Path, default=Path("data"))
     parser.add_argument("--model-path", type=str, default="hustvl/yolos-small",
                         help="HuggingFace model name or path to a local fine-tuned checkpoint")
@@ -239,5 +237,6 @@ if __name__ == "__main__":
         radius_deg=args.radius_deg,
         scale=args.scale,
         confidence_threshold=args.confidence_threshold,
+        nms_iou_threshold=args.nms_iou_threshold,
         model_path=args.model_path,
     )
