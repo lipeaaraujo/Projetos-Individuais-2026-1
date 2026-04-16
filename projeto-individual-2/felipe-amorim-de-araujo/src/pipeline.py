@@ -3,7 +3,7 @@ import json
 import subprocess
 import time
 import mlflow
-import mlflow.pytorch
+import mlflow.pyfunc
 import numpy as np
 from collections import defaultdict
 from pathlib import Path
@@ -13,6 +13,7 @@ from src.data.ingest import build_dataset
 from src.data.preprocess import preprocess_image
 from src.model.detector import SpaceDetector
 from src.model.guardrails import validate_input, validate_output, GuardrailError
+from src.model.pyfunc_model import SpaceDetectorPyfunc
 
 EXPERIMENT_NAME = "space-object-detection"
 
@@ -199,10 +200,26 @@ def run_pipeline(
         for img_path in list(processed_dir.glob("*.jpg"))[:5]:
             mlflow.log_artifact(str(img_path), artifact_path="annotated_samples")
 
-        # --- Register model ---
-        mlflow.pytorch.log_model(
-            detector.model,
+        # --- Register model as pyfunc (full pipeline: guardrails + preprocessing + model) ---
+        # Save model checkpoint and config so the pyfunc can reload them at serve time.
+        checkpoint_dir = data_dir / "model_checkpoint"
+        detector.model.save_pretrained(checkpoint_dir)
+        detector.processor.save_pretrained(checkpoint_dir)
+
+        config_path = data_dir / "model_config.json"
+        config_path.write_text(json.dumps({
+            "confidence_threshold": confidence_threshold,
+            "model_name": model_path,
+        }, indent=2))
+
+        mlflow.pyfunc.log_model(
             artifact_path="model",
+            python_model=SpaceDetectorPyfunc(),
+            artifacts={
+                "checkpoint": str(checkpoint_dir),
+                "config": str(config_path),
+            },
+            code_paths=["src"],
             registered_model_name="space-detector",
         )
 

@@ -27,12 +27,15 @@ import argparse
 import subprocess
 from pathlib import Path
 
+import json
+
 import mlflow
-import mlflow.pytorch
-from transformers import YolosForObjectDetection
+import mlflow.pyfunc
+from transformers import YolosForObjectDetection, YolosImageProcessor
 
 from src.data.annotate import TRAINING_REGIONS, build_annotated_dataset
 from src.data.dataset import load_annotations, train_val_split
+from src.model.pyfunc_model import SpaceDetectorPyfunc
 from src.model.train import MODEL_NAME, finetune
 
 EXPERIMENT_NAME = "space-object-detection-finetune"
@@ -151,12 +154,22 @@ def run_finetune_pipeline(
         )
 
         # ------------------------------------------------------------------
-        # Register best checkpoint
+        # Register best checkpoint as pyfunc (full pipeline: guardrails + preprocessing + model)
         # ------------------------------------------------------------------
-        best_model = YolosForObjectDetection.from_pretrained(best_checkpoint)
-        mlflow.pytorch.log_model(
-            best_model,
+        config_path = data_dir / "model_config.json"
+        config_path.write_text(json.dumps({
+            "confidence_threshold": 0.4,
+            "model_name": str(best_checkpoint),
+        }, indent=2))
+
+        mlflow.pyfunc.log_model(
             artifact_path="finetuned-model",
+            python_model=SpaceDetectorPyfunc(),
+            artifacts={
+                "checkpoint": str(best_checkpoint),
+                "config": str(config_path),
+            },
+            code_paths=["src"],
             registered_model_name="space-detector-finetuned",
         )
 

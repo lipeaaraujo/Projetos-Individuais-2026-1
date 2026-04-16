@@ -15,6 +15,7 @@ def pipeline_mocks(tmp_path):
 
     with patch("src.pipeline.build_dataset", return_value={"downloaded": 3, "skipped": 1}) as mock_ingest, \
          patch("src.pipeline.SpaceDetector") as mock_det_cls, \
+         patch("src.pipeline.SpaceDetectorPyfunc"), \
          patch("src.pipeline.mlflow") as mock_mlflow, \
          patch("src.pipeline.Image.open", return_value=fake_img):
 
