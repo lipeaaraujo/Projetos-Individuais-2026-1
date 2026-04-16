@@ -206,19 +206,55 @@ Cada execução recebe tag `git_commit` para rastreabilidade código-modelo.
 
 ### 5.3 Evidências de execução
 
-Runs registradas no banco `mlflow.db`:
+**Lista de experimentos:**
 
-| Run ID | Experimento | Status | Modelo |
-|--------|-------------|--------|--------|
-| `754a9fa8` | finetune | FINISHED | hustvl/yolos-small (5 épocas, val_loss=2.867) |
-| `56567171` | finetune | FINISHED | hustvl/yolos-small (1 época, smoke-test) |
-| `9fde6658` | inferência | FINISHED | data/finetune/checkpoints/best |
+![Lista de experimentos](assets/experiments_list.png)
 
-Exemplo de métricas da run de inferência `9fde6658`:
-- `detection_rate`: 0.8889 (16/18 imagens com detecções)
-- `n_detections_total`: 388
-- `confidence_p50`: 0.4208
-- `inference_time_avg_s`: 1.439s por imagem
+#### Runs de fine-tuning (`space-object-detection-finetune`)
+
+| Run ID | Nome | Status | Regiões | Épocas | best_val_loss |
+|--------|------|--------|---------|--------|---------------|
+| `56567171` | big-doe-293 | FINISHED | 6 | 1 | 2.7323 (smoke-test) |
+| `754a9fa8` | placid-dolphin-127 | FINISHED | 20 | 5 | 2.8672 |
+| `586651e6` | receptive-ram-241 | FAILED | 100 | 30 | — |
+| `90bd4966` | capable-cod-85 | FINISHED | 60 | 20 | **1.5543** ← melhor |
+
+A run `90bd4966` produziu o melhor checkpoint (`data/finetune/checkpoints/best`), treinando sobre 53 imagens com 668 objetos anotados por 20 épocas, atingindo `best_val_loss=1.554` — significativamente inferior às runs de smoke-test.
+
+**Run de fine-tuning (`90bd4966` / `capable-cod-85`) — curvas de loss por época:**
+
+![Run de fine-tuning](assets/fine_tuning_run.png)
+
+**Comparação entre runs de fine-tuning:**
+
+![Comparação de runs 1](assets/finetuning_run_comparison1.png)
+![Comparação de runs 2](assets/finetuning_run_comparison2.png)
+![Comparação de runs 3](assets/finetuning_run_comparison3.png)
+
+#### Runs de inferência (`space-object-detection`)
+
+| Run ID | Nome | Modelo | confidence_threshold | detection_rate | n_detections |
+|--------|------|--------|---------------------|----------------|--------------|
+| `9fde6658` | honorable-carp-889 | fine-tuned | 0.4 | 88.9% | 388 |
+| `4bd51066` | peaceful-squid-814 | fine-tuned | 0.4 | 77.8% | 53 |
+| `dd4443bd` | amazing-shark-660 | fine-tuned | 0.4 | 100% | 772 |
+| `fdf5bbca` | brawny-finch-19 | fine-tuned | 0.6 | 100% | 233 |
+| `d5e3debd` | skittish-boar-225 | **base (COCO)** | 0.6 | **5.6%** | **1** |
+| `3e443f8e` | treasured-stag-146 | fine-tuned | 0.6 | 100% | 233 |
+| `c6ecb73a` | abundant-auk-574 | fine-tuned | 0.6 | 100% | 233 |
+
+**Impacto do fine-tuning:** A run `d5e3debd` executou o modelo base COCO (`hustvl/yolos-small`) sem fine-tuning com `confidence_threshold=0.6` — resultando em apenas 1 detecção em 18 imagens (`detection_rate=5.6%`). O modelo fine-tuned (`90bd4966`) com os mesmos parâmetros detecta objetos em 100% das imagens (233 detecções, `confidence_p50=0.754`).
+
+**Run de inferência (`9fde6658` / `honorable-carp-889`):**
+
+![Run de inferência](assets/first_inference_run.png)
+
+#### Model Registry
+
+**Model Registry — `space-detector` (9 versões) e `space-detector-finetuned` (2 versões):**
+
+![Versões space-detector](assets/list_space_detector_models.png)
+![Versões space-detector-finetuned](assets/list_space_detector_finetuning_models.png)
 
 ---
 
@@ -303,6 +339,11 @@ Rejeições de guardrail são registradas como métricas MLflow (`guardrail_reje
 - **Distribuição de confiança**: percentis p25/p50/p75/p95 por execução permitem detectar drift na qualidade das detecções entre runs
 - **Rastreabilidade**: tag `git_commit` em cada run vincula modelo à versão de código; `model_name` identifica qual checkpoint foi usado
 - **Artefatos inspecionáveis**: `detections.json` com todas as predições + imagens anotadas permitem análise qualitativa por run
+
+**Exemplos de imagens anotadas com bounding boxes detectados:**
+
+![Imagem anotada 1](assets/annotated_image1.png)
+![Imagem anotada 2](assets/annotated_image2.png)
 
 ---
 
