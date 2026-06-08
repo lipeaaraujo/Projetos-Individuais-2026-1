@@ -137,6 +137,17 @@ def mark_failed(conn: sqlite3.Connection, doc_id: int, error: str) -> None:
     )
 
 
+def mark_skipped(conn: sqlite3.Connection, doc_id: int, reason: str) -> None:
+    conn.execute(
+        "UPDATE documents SET status = 'skipped', error = ? WHERE id = ?",
+        (reason[:2000], doc_id),
+    )
+
+
+def delete_document(conn: sqlite3.Connection, doc_id: int) -> None:
+    conn.execute("DELETE FROM documents WHERE id = ?", (doc_id,))
+
+
 # --- Structured store -----------------------------------------------------
 
 
