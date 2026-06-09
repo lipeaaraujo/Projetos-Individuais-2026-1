@@ -8,6 +8,7 @@ Endpoints:
 
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
 from typing import Optional
 
 from fastapi import FastAPI, Query
@@ -15,16 +16,19 @@ from fastapi import FastAPI, Query
 from ..config import get_settings
 from ..db import connect, init_db
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db(get_settings().db_path)
+    yield
+
+
 app = FastAPI(
     title="API Conjuntura do Setor Habitacional",
     description="Dados operacionais absolutos de incorporadoras, extraídos por LLM.",
     version="1.0.0",
+    lifespan=lifespan,
 )
-
-
-@app.on_event("startup")
-def _startup() -> None:
-    init_db(get_settings().db_path)
 
 
 @app.get("/health")
