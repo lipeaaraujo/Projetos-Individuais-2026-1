@@ -1,5 +1,9 @@
 # Pipeline UDA — Conjuntura do Setor Habitacional
 
+> **Projeto 4 - Pipeline de UDA (Unstructured Data Analysis)**  
+> Aluno: Felipe Amorim de Araújo
+> Matrícula: 221022275
+
 Pipeline de Engenharia e Análise de Dados Não Estruturados (UDA) que coleta
 *Prévias Operacionais* em PDF das Centrais de Resultados (RI) de incorporadoras,
 extrai os **valores operacionais absolutos** via LLM (Gemini, multimodal) sob um
