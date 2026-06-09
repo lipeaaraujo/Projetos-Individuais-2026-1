@@ -8,9 +8,13 @@ resilience to layout changes comes from the model reading the document as-is.
 from __future__ import annotations
 
 import json
+import time
 
 from ..contract import PreviaOperacional
 from .chunking import ChunkPlan, plan_extraction
+
+MAX_RETRIES = 3
+TRANSIENT = ("503", "UNAVAILABLE", "429", "RESOURCE_EXHAUSTED", "500", "INTERNAL")
 
 SYSTEM_PROMPT = """\
 Você é um motor de extração de dados para o Relatório de Conjuntura do Setor \
@@ -51,22 +55,32 @@ def extract(pdf_bytes: bytes, *, api_key: str, model: str) -> tuple[PreviaOperac
     from google.genai import types
 
     plan = plan_extraction(pdf_bytes)
+    if plan.page_count == 0:
+        raise ValueError("PDF inválido ou vazio (0 páginas)")
+
     client = genai.Client(api_key=api_key)
-
-    response = client.models.generate_content(
-        model=model,
-        contents=[
-            types.Part.from_bytes(data=plan.pdf_bytes, mime_type="application/pdf"),
-            _build_prompt(plan),
-        ],
-        config=types.GenerateContentConfig(
-            response_mime_type="application/json",
-            temperature=0.0,
-        ),
+    config = types.GenerateContentConfig(
+        response_mime_type="application/json", temperature=0.0
     )
+    contents = [
+        types.Part.from_bytes(data=plan.pdf_bytes, mime_type="application/pdf"),
+        _build_prompt(plan),
+    ]
 
-    raw = (response.text or "").strip()
-    if not raw:
-        raise ValueError("Resposta vazia do modelo")
-    previa = PreviaOperacional.model_validate_json(raw)
-    return previa, plan
+    last_err: Exception | None = None
+    for attempt in range(1, MAX_RETRIES + 1):
+        try:
+            response = client.models.generate_content(
+                model=model, contents=contents, config=config
+            )
+            raw = (response.text or "").strip()
+            if not raw:
+                raise ValueError("Resposta vazia do modelo")
+            return PreviaOperacional.model_validate_json(raw), plan
+        except Exception as e:  # noqa: BLE001
+            last_err = e
+            if attempt < MAX_RETRIES and any(t in str(e) for t in TRANSIENT):
+                time.sleep(2 ** attempt)  # backoff exponencial: 2s, 4s
+                continue
+            raise
+    raise last_err  # unreachable

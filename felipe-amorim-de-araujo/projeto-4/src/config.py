@@ -41,7 +41,7 @@ class Settings(BaseSettings):
     # Hour-of-day (0-23) the daily scheduler polls RI pages.
     poll_hour: int = 6
     # Comma-separated list of adapters to enable in the poller/scheduler.
-    enabled_adapters: str = "mrv,cury"
+    enabled_adapters: str = "direcional,trisul"
     http_timeout: float = 30.0
     user_agent: str = (
         "Mozilla/5.0 (compatible; ConjunturaBot/1.0; "
